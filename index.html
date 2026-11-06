@@ -128,14 +128,32 @@ button.mini { font-size: 13px; padding: 4px 10px; background: transparent; color
   .big { font-size: 52px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* === Temas por materia === */
+:root[data-tema="ap"] { --bg: #edf4f7; --accent: #0a4a66; --accent-soft: #dcecf3; --gold: #12a3c2; --line: #cfdde5; }
+:root[data-tema="pco"] { --bg: #fdf6ee; --accent: #8e1d4a; --accent-soft: #fbe6ec; --gold: #ec8a07; --line: #ecdccf; }
+@media (prefers-color-scheme: dark) {
+  :root[data-tema="ap"]:not([data-theme="light"]) { --bg: #0b1820; --surface: #11232e; --accent: #7fd0e6; --accent-soft: #15323f; --gold: #2cc3e0; --line: #1f3b49; }
+  :root[data-tema="pco"]:not([data-theme="light"]) { --bg: #1b1012; --surface: #26171a; --accent: #f4a3bf; --accent-soft: #3a1e27; --gold: #ffb340; --line: #43282f; }
+}
+:root[data-tema="ap"][data-theme="dark"] { --bg: #0b1820; --surface: #11232e; --accent: #7fd0e6; --accent-soft: #15323f; --gold: #2cc3e0; --line: #1f3b49; }
+:root[data-tema="pco"][data-theme="dark"] { --bg: #1b1012; --surface: #26171a; --accent: #f4a3bf; --accent-soft: #3a1e27; --gold: #ffb340; --line: #43282f; }
+.tema-banda { display: flex; align-items: center; gap: 14px; }
+.tema-iconos { display: flex; gap: 10px; align-items: center; margin-left: auto; flex-shrink: 0; }
+.tema-iconos svg { width: 58px; height: 58px; }
+:root[data-tema="ap"] header, :root[data-tema="ap"] .hdr-band { background-image: radial-gradient(circle at 92% 20%, color-mix(in srgb, var(--gold) 16%, transparent) 0 60px, transparent 61px); }
+:root[data-tema="pco"] header, :root[data-tema="pco"] .hdr-band { background-image: radial-gradient(circle at 92% 30%, color-mix(in srgb, var(--gold) 14%, transparent) 0 62px, transparent 63px); }
+@media (max-width: 560px) { .tema-iconos svg { width: 40px; height: 40px; } }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>Simulador de calificaciones · Producción de Cultivos Ornamentales</h1>
-    <p>Escribe tu NUA para cargar tus calificaciones registradas y mueve las que faltan para ver cómo quedaría tu final.</p>
-    <div class="weights" id="chips"></div>
+  <header class="tema-banda">
+    <div>
+      <h1>Simulador de calificaciones · Producción de Cultivos Ornamentales</h1>
+      <p>Escribe tu NUA para cargar tus calificaciones registradas y mueve las que faltan para ver cómo quedaría tu final.</p>
+      <div class="weights" id="chips"></div>
+    </div>
+    <div class="tema-iconos" id="temaIconos" aria-hidden="true"></div>
   </header>
 
   <section class="card">
@@ -209,6 +227,62 @@ button.mini { font-size: 13px; padding: 4px 10px; background: transparent; color
 </div>
 
 <script>
+/* ===== TEMA VISUAL ===== */
+const TEMA_ICONOS = {
+  ap: [
+    // Dron cuadricóptero
+    `<svg viewBox="0 0 64 64" role="img" aria-label="Dron"><title>Dron</title>
+      <g stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none" style="color:var(--accent)">
+        <line x1="20" y1="24" x2="10" y2="16"/><line x1="44" y1="24" x2="54" y2="16"/>
+        <line x1="20" y1="40" x2="10" y2="48"/><line x1="44" y1="40" x2="54" y2="48"/>
+      </g>
+      <g fill="none" stroke="var(--gold)" stroke-width="2"><ellipse cx="10" cy="16" rx="9" ry="3"/><ellipse cx="54" cy="16" rx="9" ry="3"/><ellipse cx="10" cy="48" rx="9" ry="3"/><ellipse cx="54" cy="48" rx="9" ry="3"/></g>
+      <rect x="20" y="22" width="24" height="20" rx="6" fill="var(--accent)"/>
+      <circle cx="32" cy="32" r="5" fill="var(--gold)"/><circle cx="32" cy="32" r="2.2" fill="var(--surface)"/>
+      <path d="M26 46 L32 56 L38 46" fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-dasharray="2 2"/>
+    </svg>`,
+    // Satélite
+    `<svg viewBox="0 0 64 64" role="img" aria-label="Satélite"><title>Satélite</title>
+      <g transform="rotate(-30 32 32)">
+        <rect x="4" y="25" width="18" height="14" rx="1.5" fill="var(--gold)"/>
+        <rect x="42" y="25" width="18" height="14" rx="1.5" fill="var(--gold)"/>
+        <g stroke="var(--surface)" stroke-width="1.2"><line x1="10" y1="25" x2="10" y2="39"/><line x1="16" y1="25" x2="16" y2="39"/><line x1="48" y1="25" x2="48" y2="39"/><line x1="54" y1="25" x2="54" y2="39"/><line x1="4" y1="32" x2="22" y2="32"/><line x1="42" y1="32" x2="60" y2="32"/></g>
+        <line x1="22" y1="32" x2="42" y2="32" stroke="var(--accent)" stroke-width="2.4"/>
+        <rect x="25" y="23" width="14" height="18" rx="3" fill="var(--accent)"/>
+        <path d="M32 41 v6" stroke="var(--accent)" stroke-width="2.4"/><path d="M26 50 a6 4 0 0 0 12 0 z" fill="var(--accent)"/>
+      </g>
+      <g fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-linecap="round" opacity=".8"><path d="M48 52 a8 8 0 0 0 8 -8"/><path d="M47 58 a14 14 0 0 0 14 -14"/></g>
+    </svg>`
+  ],
+  pco: [
+    // Cempasúchil
+    `<svg viewBox="0 0 64 64" role="img" aria-label="Flor de cempasúchil"><title>Cempasúchil</title>
+      <path d="M32 46 C30 52 30 56 31 62" stroke="#3f7d3a" stroke-width="2.6" fill="none"/>
+      <path d="M31 55 C24 52 20 54 18 57 C24 59 28 58 31 55 Z" fill="#4f9a45"/>
+      <g fill="#f08a00">${Array.from({ length: 14 }, (_, i) => `<ellipse cx="32" cy="10" rx="5" ry="10" transform="rotate(${i * 360 / 14} 32 28)"/>`).join("")}</g>
+      <g fill="#f9a51a">${Array.from({ length: 12 }, (_, i) => `<ellipse cx="32" cy="15" rx="4.2" ry="8" transform="rotate(${i * 30 + 15} 32 28)"/>`).join("")}</g>
+      <g fill="#ffc533">${Array.from({ length: 10 }, (_, i) => `<ellipse cx="32" cy="20" rx="3.4" ry="5.5" transform="rotate(${i * 36} 32 28)"/>`).join("")}</g>
+      <circle cx="32" cy="28" r="4" fill="#e07000"/>
+    </svg>`,
+    // Rosa
+    `<svg viewBox="0 0 64 64" role="img" aria-label="Rosa"><title>Rosa</title>
+      <path d="M32 36 C33 44 31 52 32 62" stroke="#2f6b34" stroke-width="2.6" fill="none"/>
+      <path d="M32 48 C40 42 47 44 50 47 C44 52 37 52 32 48 Z" fill="#3f8a44"/>
+      <path d="M32 54 C25 50 18 52 15 55 C21 59 28 58 32 54 Z" fill="#3f8a44"/>
+      <path d="M14 20 C14 34 24 40 32 40 C40 40 50 34 50 20 C44 26 38 26 32 22 C26 26 20 26 14 20 Z" fill="#a3123f"/>
+      <path d="M18 14 C20 28 28 32 32 32 C36 32 44 28 46 14 C40 20 36 20 32 16 C28 20 24 20 18 14 Z" fill="#c81d52"/>
+      <path d="M24 12 C24 22 29 26 32 26 C35 26 40 22 40 12 C36 15 34 15 32 12 C30 15 28 15 24 12 Z" fill="#e0306a"/>
+      <path d="M28 14 C29 19 31 20 32 20 C34 20 36 18 36 14 C34 16 30 16 28 14 Z" fill="#f2577f"/>
+    </svg>`
+  ]
+};
+function aplicarTema(materia, tema) {
+  const t = tema || (/ornamental/i.test(materia || "") ? "pco" : "ap");
+  document.documentElement.dataset.tema = t;
+  const box = document.getElementById("temaIconos");
+  if (box && TEMA_ICONOS[t]) box.innerHTML = TEMA_ICONOS[t].join("");
+}
+
 /* ===== DATOS (se generan desde la hoja de captura; no editar a mano) ===== */
 const HOJA = {"materia":"Producción de Cultivos Ornamentales","rubros":[{"id":"examenes","nombre":"Exámenes"},{"id":"practicas","nombre":"Prácticas"},{"id":"proyecto","nombre":"Proyecto final"},{"id":"tareas","nombre":"Tareas"},{"id":"exposicion","nombre":"Exposición"},{"id":"extra","nombre":"Puntos extra","extra":true}],"pesos":{"examenes":0.3,"practicas":0.25,"proyecto":0.2,"tareas":0.15,"exposicion":0.1,"extra":0.05},"previstas":{"examenes":2,"practicas":4,"proyecto":1,"tareas":4,"exposicion":2,"extra":2},"columnas":[{"id":"pr1","rubro":"practicas","nombre":"P1"},{"id":"pf1","rubro":"proyecto","nombre":"Proyecto final"},{"id":"ta1","rubro":"tareas","nombre":"Formato de prácticas"},{"id":"ta2","rubro":"tareas","nombre":"Infogram"},{"id":"xt1","rubro":"extra","nombre":"Sorpresa"},{"id":"xt2","rubro":"extra","nombre":"Disfraz"}],"alumnos":[{"nua":"301259","nombre":"CONDE ZARAZUA MARIA ABIGAIL"},{"nua":"301266","nombre":"GUDIÑO PEREZ ANA VIANEY"},{"nua":"300706","nombre":"GUERRERO OLVERA ANGEL IZAEL"},{"nua":"301276","nombre":"HERNANDEZ CELESTINO MARIA GUADALUPE"},{"nua":"301258","nombre":"HERNANDEZ ESCOBAR ALONDRA"},{"nua":"799231","nombre":"HERNANDEZ ESPINO EMANUEL"},{"nua":"301274","nombre":"MAURICIO AGUILAR NANCY LIZBETH"},{"nua":"300871","nombre":"MAURICIO RAMIREZ JESUS"},{"nua":"301264","nombre":"MONTES GIL JUAN RAMON"},{"nua":"301275","nombre":"MONTES MATA KAREN YADIRA"},{"nua":"301267","nombre":"RAMIREZ OROZCO DIEGO"},{"nua":"301272","nombre":"RAMOS BARRERA RAUL"},{"nua":"301269","nombre":"SUAREZ HERNANDEZ CESAR REMEDIOS"}],"equipos":{"301259":"E2","301266":"E1","300706":"E1","301276":"E1","301258":"E2","799231":"E1","301274":"E1","300871":"E2","301264":"E2","301275":"E1","301267":"E2","301272":"E1","301269":"E2"},"rubrosEquipo":["practicas"],"sesiones":[{"id":"s20260818","fecha":"2026-08-18"},{"id":"s20260819","fecha":"2026-08-19"},{"id":"s20260825","fecha":"2026-08-25"},{"id":"s20260826","fecha":"2026-08-26"},{"id":"s20260901","fecha":"2026-09-01"},{"id":"s20260902","fecha":"2026-09-02"},{"id":"s20260908","fecha":"2026-09-08"},{"id":"s20260915","fecha":"2026-09-15"},{"id":"s20260922","fecha":"2026-09-22"},{"id":"s20260929","fecha":"2026-09-29"},{"id":"s20260930","fecha":"2026-09-30"},{"id":"s20261006","fecha":"2026-10-06"},{"id":"s20261020","fecha":"2026-10-20"},{"id":"s20261027","fecha":"2026-10-27"},{"id":"s20261103","fecha":"2026-11-03"}],"asistenciaMin":80,"minimo":7,"tope":10};
 const CALIF = {"301259":{"pr1":7.2,"ta1":0,"ta2":0,"xt1":0,"xt2":0},"301266":{"pr1":7.3,"ta1":10,"ta2":10,"xt1":4,"xt2":0},"300706":{"pr1":7.3,"ta1":10,"ta2":0,"xt1":10,"xt2":0},"301276":{"pr1":7.3,"ta1":10,"ta2":9,"xt1":9,"xt2":0},"301258":{"pr1":7.2,"ta1":10,"ta2":10,"xt1":4,"xt2":0},"799231":{"pr1":7.3,"ta1":0,"ta2":0,"xt1":0,"xt2":0},"301274":{"pr1":7.3,"ta1":10,"ta2":10,"xt1":6.5,"xt2":10},"300871":{"pr1":7.2,"ta1":10,"ta2":10,"xt1":10,"xt2":0},"301264":{"pr1":7.2,"ta1":10,"ta2":10,"xt1":0,"xt2":10},"301275":{"pr1":7.3,"ta1":10,"ta2":10,"xt1":6.5,"xt2":0},"301267":{"pr1":7.2,"ta1":10,"ta2":10,"xt1":9,"xt2":0},"301272":{"pr1":7.3,"ta1":10,"ta2":10,"xt1":4,"xt2":0},"301269":{"pr1":7.2,"ta1":10,"ta2":10,"xt1":9,"xt2":10}};
@@ -229,6 +303,7 @@ const CONFIG = {
   minimo: HOJA.minimo
 };
 document.getElementById("chips").innerHTML = CONFIG.rubros.map(r => `<span class="chip">${r.nombre} ${r.extra ? "+" : ""}${Math.round(r.peso * 100)}%</span>`).join("");
+aplicarTema(HOJA.materia, HOJA.tema);
 const NOMBRES = Object.fromEntries(HOJA.alumnos.map(a => [a.nua, a.nombre]));
 
 let fijas = {};  // rubro -> [{nombre, v}] registradas
