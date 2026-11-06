@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador de calificaciones · Producción de Cultivos Ornamentales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Paleta institucional: azul marino y dorado; semáforo rojo/amarillo/verde para la calificación final. */
+  --bg: #f2f4f8;
+  --surface: #ffffff;
+  --ink: #0f1e33;
+  --muted: #56627a;
+  --line: #d6dbe5;
+  --accent: #0b2d5b;
+  --accent-soft: #e5ebf5;
+  --gold: #b48a2c;
+  --good: #1e8a3e;
+  --warn: #c99700;
+  --bad: #c0392b;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1626; --surface: #15213a; --ink: #e8edf6; --muted: #9aa7bf;
+    --line: #26375a; --accent: #8fb3e8; --accent-soft: #1c2c4c; --gold: #d9b45a;
+    --good: #4fc26f; --warn: #f2c230; --bad: #ef6b5b; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1626; --surface: #15213a; --ink: #e8edf6; --muted: #9aa7bf;
+    --line: #26375a; --accent: #8fb3e8; --accent-soft: #1c2c4c; --gold: #d9b45a;
+    --good: #4fc26f; --warn: #f2c230; --bad: #ef6b5b; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 24px 20px 48px; display: grid; gap: 20px; }
+header { border-top: 6px solid var(--gold); padding-top: 14px; }
+header h1 { color: var(--accent); font-family: var(--font-display); font-weight: 800; font-size: clamp(22px, 4vw, 30px); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); }
+.weights { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chip { font-size: 13px; padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+.login { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.login label { display: grid; gap: 4px; font-weight: 600; font-size: 14px; }
+input[type="text"], input[type="number"] { font-family: var(--font-mono); font-size: 16px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+input[type="text"] { width: 160px; }
+button { font-family: var(--font-body); font-weight: 600; font-size: 14px; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--surface); cursor: pointer; }
+button.ghost { background: transparent; color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.msg { font-size: 14px; color: var(--muted); flex-basis: 100%; margin: 0; }
+.msg.error { color: var(--bad); }
+.summary { display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: center; }
+.big { font-family: var(--font-mono); font-weight: 600; font-size: 64px; line-height: 1; font-variant-numeric: tabular-nums; }
+.big small { font-size: 20px; color: var(--muted); }
+.who { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.nombre { display: block; font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--ink); text-wrap: balance; margin-bottom: 2px; }
+.pill { display: inline-block; font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 999px; margin-top: 8px; }
+.pill.good { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+.pill.warn { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); }
+.pill.bad { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+.scale { position: relative; height: 14px; border-radius: 7px; background: linear-gradient(90deg, var(--bad) 0%, var(--bad) 45%, var(--warn) 62%, var(--warn) 69.5%, var(--good) 70.5%, var(--good) 100%); }
+.marker { position: absolute; top: -6px; width: 4px; height: 26px; border-radius: 2px; background: var(--ink); transform: translateX(-2px); transition: left .25s; }
+.goalmark { position: absolute; top: 16px; font-size: 11px; color: var(--muted); transform: translateX(-50%); white-space: nowrap; }
+.goalmark::before { content: ""; position: absolute; left: 50%; top: -18px; height: 16px; border-left: 2px dashed var(--muted); }
+.ticks { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 22px; }
+.final-box { border-radius: 12px; padding: 16px 18px; display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; transition: background .3s, border-color .3s; border: 2px solid var(--line); }
+.final-box.verde { background: color-mix(in srgb, var(--good) 16%, var(--surface)); border-color: var(--good); }
+.final-box.amarillo { background: color-mix(in srgb, var(--warn) 20%, var(--surface)); border-color: var(--warn); }
+.final-box.rojo { background: color-mix(in srgb, var(--bad) 16%, var(--surface)); border-color: var(--bad); }
+.semaforo { display: grid; gap: 6px; padding: 8px 7px; background: #1b2433; border-radius: 14px; }
+.luz { width: 22px; height: 22px; border-radius: 50%; opacity: .22; transition: opacity .3s, box-shadow .3s; }
+.luz.r { background: #e74c3c; } .luz.a { background: #f4c430; } .luz.v { background: #2ecc71; }
+.luz.on { opacity: 1; box-shadow: 0 0 10px 2px currentColor; }
+.luz.r.on { color: #e74c3c; } .luz.a.on { color: #f4c430; } .luz.v.on { color: #2ecc71; }
+.estado { font-weight: 700; font-size: 15px; margin-top: 8px; }
+.estado-desc { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.need { margin-top: 12px; font-size: 14px; }
+.need strong { font-family: var(--font-mono); }
+.grid2 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; align-items: start; }
+h2 { font-family: var(--font-display); font-size: 17px; font-weight: 700; margin: 0 0 4px; }
+.hint { font-size: 13px; color: var(--muted); margin: 0 0 14px; }
+fieldset { border: 0; padding: 0; margin: 0 0 14px; }
+legend { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; padding: 0; }
+.row { display: grid; grid-template-columns: 110px 1fr 74px; gap: 10px; align-items: center; padding: 6px 0; }
+.row label { font-size: 14px; }
+.row input[type="number"] { width: 74px; text-align: right; font-size: 15px; padding: 6px 8px; }
+.row.fixed { background: var(--accent-soft); border-radius: 8px; padding: 6px 8px; margin: 0 -8px; }
+.lock { font-size: 12px; color: var(--accent); font-weight: 600; }
+.fixedval { font-family: var(--font-mono); font-weight: 600; text-align: right; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+td.num, th.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+tfoot td { font-weight: 700; border-bottom: 0; }
+.bar { height: 6px; border-radius: 3px; background: var(--line); margin-top: 4px; overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--accent); transition: width .25s; }
+.goal { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-top: 14px; }
+.goal input { width: 74px; font-size: 15px; padding: 6px 8px; }
+.note { font-size: 13px; color: var(--muted); }
+.example { font-size: 12px; font-weight: 700; color: var(--warn); text-transform: uppercase; letter-spacing: .06em; }
+.adds { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+button.mini { font-size: 13px; padding: 4px 10px; background: transparent; color: var(--accent); border: 1px dashed var(--accent); }
+.cnt { color: var(--muted); font-size: 12px; }
+.asis-top { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
+.asis-top .hint { margin: 0; }
+.asis-pct { font-family: var(--font-mono); font-weight: 600; font-size: 34px; line-height: 1; color: var(--good); white-space: nowrap; }
+.asis-pct.bajo { color: var(--bad); }
+.asis-counts { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 10px; font-size: 13px; }
+.asis-counts span { padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--ink); }
+.asis-counts span.alerta { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); font-weight: 600; }
+.asis-strip { display: flex; flex-wrap: wrap; gap: 4px; }
+.asis-d { display: grid; justify-items: center; gap: 2px; width: 36px; }
+.asis-d i { font-style: normal; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; color: #fff; background: var(--line); }
+.asis-d i.A { background: #2e9e4f; } .asis-d i.R { background: #e0a800; } .asis-d i.F { background: #c0392b; }
+.asis-d small { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.final-box.rojo .estado { color: var(--bad); }
+@media (max-width: 760px) {
+  .grid2 { grid-template-columns: 1fr; }
+  .summary { grid-template-columns: 1fr; gap: 14px; }
+  .big { font-size: 52px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Simulador de calificaciones · Producción de Cultivos Ornamentales</h1>
+    <p>Escribe tu NUA para cargar tus calificaciones registradas y mueve las que faltan para ver cómo quedaría tu final.</p>
+    <div class="weights" id="chips"></div>
+  </header>
+
+  <section class="card">
+    <form class="login" id="loginForm">
+      <label for="nua">Tu NUA
+        <input type="text" id="nua" inputmode="numeric" autocomplete="off" placeholder="Ej. 301259">
+      </label>
+      <button type="submit">Ver mis calificaciones</button>
+      <button type="button" class="ghost" id="resetBtn">Reiniciar simulación</button>
+      <p class="msg" id="msg">Mientras no escribas tu NUA verás un ejemplo.</p>
+    </form>
+  </section>
+
+  <section class="card summary" aria-live="polite">
+    <div class="final-box" id="finalBox">
+      <div>
+        <div class="who" id="who"><span class="example">Ejemplo</span></div>
+        <div class="big"><span id="final">0.0</span><small> / 10</small></div>
+        <div class="estado" id="status">—</div>
+        <div class="estado-desc" id="statusDesc"></div>
+      </div>
+      <div class="semaforo" aria-hidden="true">
+        <div class="luz r" id="luzR"></div><div class="luz a" id="luzA"></div><div class="luz v" id="luzV"></div>
+      </div>
+    </div>
+    <div>
+      <div class="scale">
+        <div class="marker" id="marker"></div>
+        <div class="goalmark" id="goalmark">meta</div>
+      </div>
+      <div class="ticks"><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span></div>
+      <p class="need" id="need"></p>
+    </div>
+  </section>
+
+  <section class="card asis" id="asisCard" aria-live="polite">
+    <div class="asis-top">
+      <div>
+        <h2>Asistencia</h2>
+        <p class="hint" id="asisRule">Se requiere 80% de asistencia para aprobar. Los retardos cuentan como asistencia; cada 3 retardos se convierten en 1 falta.</p>
+      </div>
+      <div class="asis-pct" id="asisPct">—</div>
+    </div>
+    <div class="asis-counts" id="asisCounts"></div>
+    <div class="asis-strip" id="asisStrip" aria-label="Registro de asistencia por fecha"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Tus calificaciones</h2>
+      <p class="hint">Las marcadas con candado ya están registradas y no se pueden cambiar. Las demás son tu simulación. Si en el semestre hay más o menos prácticas, tareas o exámenes, agrégalas o quítalas.</p>
+      <div id="controls"></div>
+      <div class="goal">
+        <label for="goalInput">Calificación que quiero alcanzar:</label>
+        <input type="number" id="goalInput" min="0" max="10" step="0.1" value="7">
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Desglose</h2>
+      <p class="hint">Cuántos puntos aporta cada rubro a tu calificación final.</p>
+      <table>
+        <thead><tr><th>Rubro</th><th class="num">Promedio</th><th class="num">Peso</th><th class="num">Aporta</th></tr></thead>
+        <tbody id="breakdown"></tbody>
+        <tfoot><tr><td>Calificación final</td><td></td><td class="num">105%</td><td class="num" id="totalCell">0.00</td></tr></tfoot>
+      </table>
+      <p class="note" id="topeNote"></p>
+      <p class="note">Esta página es solo un simulador. Tu calificación oficial es la que registra tu profesor.</p>
+    </section>
+  </div>
+</div>
+
+<script>
+/* ===== DATOS (se generan desde la hoja de captura; no editar a mano) ===== */
+const HOJA = {"materia":"Producción de Cultivos Ornamentales","rubros":[{"id":"examenes","nombre":"Exámenes"},{"id":"practicas","nombre":"Prácticas"},{"id":"proyecto","nombre":"Proyecto final"},{"id":"tareas","nombre":"Tareas"},{"id":"exposicion","nombre":"Exposición"},{"id":"extra","nombre":"Puntos extra","extra":true}],"pesos":{"examenes":0.3,"practicas":0.25,"proyecto":0.2,"tareas":0.15,"exposicion":0.1,"extra":0.05},"previstas":{"examenes":2,"practicas":4,"proyecto":1,"tareas":4,"exposicion":2,"extra":2},"columnas":[{"id":"pr1","rubro":"practicas","nombre":"P1"},{"id":"pf1","rubro":"proyecto","nombre":"Proyecto final"},{"id":"ta1","rubro":"tareas","nombre":"Formato de prácticas"},{"id":"ta2","rubro":"tareas","nombre":"Infogram"},{"id":"xt1","rubro":"extra","nombre":"Sorpresa"},{"id":"xt2","rubro":"extra","nombre":"Disfraz"}],"alumnos":[{"nua":"301259","nombre":"CONDE ZARAZUA MARIA ABIGAIL"},{"nua":"301266","nombre":"GUDIÑO PEREZ ANA VIANEY"},{"nua":"300706","nombre":"GUERRERO OLVERA ANGEL IZAEL"},{"nua":"301276","nombre":"HERNANDEZ CELESTINO MARIA GUADALUPE"},{"nua":"301258","nombre":"HERNANDEZ ESCOBAR ALONDRA"},{"nua":"799231","nombre":"HERNANDEZ ESPINO EMANUEL"},{"nua":"301274","nombre":"MAURICIO AGUILAR NANCY LIZBETH"},{"nua":"300871","nombre":"MAURICIO RAMIREZ JESUS"},{"nua":"301264","nombre":"MONTES GIL JUAN RAMON"},{"nua":"301275","nombre":"MONTES MATA KAREN YADIRA"},{"nua":"301267","nombre":"RAMIREZ OROZCO DIEGO"},{"nua":"301272","nombre":"RAMOS BARRERA RAUL"},{"nua":"301269","nombre":"SUAREZ HERNANDEZ CESAR REMEDIOS"}],"equipos":{"301259":"E2","301266":"E1","300706":"E1","301276":"E1","301258":"E2","799231":"E1","301274":"E1","300871":"E2","301264":"E2","301275":"E1","301267":"E2","301272":"E1","301269":"E2"},"rubrosEquipo":["practicas"],"sesiones":[{"id":"s20260818","fecha":"2026-08-18"},{"id":"s20260819","fecha":"2026-08-19"},{"id":"s20260825","fecha":"2026-08-25"},{"id":"s20260826","fecha":"2026-08-26"},{"id":"s20260901","fecha":"2026-09-01"},{"id":"s20260902","fecha":"2026-09-02"},{"id":"s20260908","fecha":"2026-09-08"},{"id":"s20260915","fecha":"2026-09-15"},{"id":"s20260922","fecha":"2026-09-22"},{"id":"s20260929","fecha":"2026-09-29"},{"id":"s20260930","fecha":"2026-09-30"},{"id":"s20261006","fecha":"2026-10-06"},{"id":"s20261020","fecha":"2026-10-20"},{"id":"s20261027","fecha":"2026-10-27"},{"id":"s20261103","fecha":"2026-11-03"}],"asistenciaMin":80,"minimo":7,"tope":10};
+const CALIF = {"301259":{"pr1":7.2,"ta1":0,"ta2":0,"xt1":0,"xt2":0},"301266":{"pr1":7.3,"ta1":10,"ta2":10,"xt1":4,"xt2":0},"300706":{"pr1":7.3,"ta1":10,"ta2":0,"xt1":10,"xt2":0},"301276":{"pr1":7.3,"ta1":10,"ta2":9,"xt1":9,"xt2":0},"301258":{"pr1":7.2,"ta1":10,"ta2":10,"xt1":4,"xt2":0},"799231":{"pr1":7.3,"ta1":0,"ta2":0,"xt1":0,"xt2":0},"301274":{"pr1":7.3,"ta1":10,"ta2":10,"xt1":6.5,"xt2":10},"300871":{"pr1":7.2,"ta1":10,"ta2":10,"xt1":10,"xt2":0},"301264":{"pr1":7.2,"ta1":10,"ta2":10,"xt1":0,"xt2":10},"301275":{"pr1":7.3,"ta1":10,"ta2":10,"xt1":6.5,"xt2":0},"301267":{"pr1":7.2,"ta1":10,"ta2":10,"xt1":9,"xt2":0},"301272":{"pr1":7.3,"ta1":10,"ta2":10,"xt1":4,"xt2":0},"301269":{"pr1":7.2,"ta1":10,"ta2":10,"xt1":9,"xt2":10}};
+const ASIS = {"301259":{"s20260818":"A","s20260819":"A","s20260825":"A","s20260826":"A","s20260901":"A","s20260902":"A","s20260908":"A","s20260915":"A","s20260922":"A","s20260929":"A","s20260930":"A","s20261006":"A","s20261020":"F","s20261027":"F","s20261103":"A"},"301266":{"s20260818":"A","s20260819":"A","s20260825":"A","s20260826":"A","s20260901":"A","s20260902":"A","s20260908":"A","s20260915":"A","s20260922":"A","s20260929":"A","s20260930":"A","s20261006":"A","s20261020":"A","s20261027":"A","s20261103":"A"},"300706":{"s20260818":"A","s20260819":"A","s20260825":"A","s20260826":"A","s20260901":"A","s20260902":"A","s20260908":"A","s20260915":"A","s20260922":"A","s20260929":"A","s20260930":"A","s20261006":"A","s20261020":"A","s20261027":"A","s20261103":"A"},"301276":{"s20260818":"A","s20260819":"A","s20260825":"A","s20260826":"A","s20260901":"A","s20260902":"A","s20260908":"A","s20260915":"A","s20260922":"A","s20260929":"A","s20260930":"A","s20261006":"A","s20261020":"A","s20261027":"A","s20261103":"A"},"301258":{"s20260818":"A","s20260819":"A","s20260825":"A","s20260826":"A","s20260901":"A","s20260902":"A","s20260908":"A","s20260915":"A","s20260922":"A","s20260929":"A","s20260930":"A","s20261006":"A","s20261020":"A","s20261027":"A","s20261103":"A"},"799231":{"s20260818":"F","s20260819":"A","s20260825":"A","s20260826":"A","s20260901":"A","s20260902":"A","s20260908":"F","s20260915":"F","s20260922":"A","s20260929":"A","s20260930":"F","s20261006":"A","s20261020":"F","s20261027":"F","s20261103":"A"},"301274":{"s20260818":"A","s20260819":"A","s20260825":"A","s20260826":"A","s20260901":"A","s20260902":"A","s20260908":"A","s20260915":"A","s20260922":"A","s20260929":"A","s20260930":"A","s20261006":"A","s20261020":"A","s20261027":"A","s20261103":"A"},"300871":{"s20260818":"A","s20260819":"A","s20260825":"A","s20260826":"A","s20260901":"A","s20260902":"A","s20260908":"A","s20260915":"A","s20260922":"A","s20260929":"A","s20260930":"A","s20261006":"A","s20261020":"A","s20261027":"A","s20261103":"A"},"301264":{"s20260818":"R","s20260819":"A","s20260825":"A","s20260826":"A","s20260901":"A","s20260902":"A","s20260908":"F","s20260915":"A","s20260922":"A","s20260929":"A","s20260930":"A","s20261006":"F","s20261020":"F","s20261027":"A","s20261103":"A"},"301275":{"s20260818":"A","s20260819":"A","s20260825":"A","s20260826":"A","s20260901":"A","s20260902":"A","s20260908":"A","s20260915":"A","s20260922":"A","s20260929":"A","s20260930":"A","s20261006":"A","s20261020":"A","s20261027":"A","s20261103":"A"},"301267":{"s20260818":"A","s20260819":"A","s20260825":"A","s20260826":"A","s20260901":"A","s20260902":"A","s20260908":"A","s20260915":"A","s20260922":"A","s20260929":"A","s20260930":"A","s20261006":"A","s20261020":"A","s20261027":"A","s20261103":"A"},"301272":{"s20260818":"A","s20260819":"A","s20260825":"A","s20260826":"A","s20260901":"A","s20260902":"A","s20260908":"A","s20260915":"A","s20260922":"A","s20260929":"A","s20260930":"A","s20261006":"A","s20261020":"A","s20261027":"A","s20261103":"A"},"301269":{"s20260818":"R","s20260819":"A","s20260825":"A","s20260826":"A","s20260901":"A","s20260902":"A","s20260908":"A","s20260915":"A","s20260922":"A","s20260929":"A","s20260930":"A","s20261006":"A","s20261020":"A","s20261027":"A","s20261103":"F"}};
+/* ======================================================================= */
+const PREFIJOS = { examenes: "Examen", practicas: "Práctica", tareas: "Tarea", proyecto: "Proyecto final", exposicion: "Exposición", extra: "Actividad extra" };
+const RUBROS_BASE = HOJA.rubros && HOJA.rubros.length ? HOJA.rubros : [
+  { id: "examenes", nombre: "Exámenes" }, { id: "practicas", nombre: "Prácticas" }, { id: "tareas", nombre: "Tareas" },
+  { id: "proyecto", nombre: "Proyecto final" }, { id: "extra", nombre: "Puntos extra", extra: true }
+];
+const CONFIG = {
+  rubros: RUBROS_BASE.map(r => ({
+    id: r.id, nombre: r.nombre, prefijo: r.prefijo || PREFIJOS[r.id] || r.nombre,
+    editable: r.id !== "proyecto", extra: !!(r.extra || r.id === "extra"), peso: HOJA.pesos[r.id] || 0
+  })),
+  valorInicialSimulado: 8.0,
+  tope: HOJA.tope,
+  minimo: HOJA.minimo
+};
+document.getElementById("chips").innerHTML = CONFIG.rubros.map(r => `<span class="chip">${r.nombre} ${r.extra ? "+" : ""}${Math.round(r.peso * 100)}%</span>`).join("");
+const NOMBRES = Object.fromEntries(HOJA.alumnos.map(a => [a.nua, a.nombre]));
+
+let fijas = {};  // rubro -> [{nombre, v}] registradas
+let pend = {};   // rubro -> [{nombre, v}] simuladas
+let califActual = null;
+let asisActual = null; // asistencia del alumno cargado (null = sin registro) // calificaciones del alumno cargado (null = ejemplo)
+
+const $ = id => document.getElementById(id);
+const clamp = v => Math.min(10, Math.max(0, v));
+const fmt = (v, d = 1) => (Math.round(v * 10 ** d) / 10 ** d).toFixed(d);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function ejemplo() {
+  const g = {};
+  HOJA.columnas.forEach((c, i) => { if (c.rubro !== "proyecto") g[c.id] = [8, 9, 10, 7, 9.5][i % 5]; });
+  return g;
+}
+
+const ASIS_MIN = HOJA.asistenciaMin ?? 80;
+function asisCalc(m) {
+  const ses = HOJA.sesiones || [];
+  if (!m || !ses.length) return null;
+  let a = 0, r = 0, f = 0;
+  ses.forEach(s => { const v = m[s.id]; if (v === "A") a++; else if (v === "R") r++; else if (v === "F") f++; });
+  const total = a + r + f; if (!total) return null;
+  const faltas = f + Math.floor(r / 3);
+  return { a, r, f, faltas, total, pct: (100 * (total - faltas)) / total };
+}
+function renderAsis() {
+  const card = $("asisCard"), ses = HOJA.sesiones || [];
+  if (!ses.length) { card.hidden = true; return; }
+  card.hidden = false;
+  $("asisRule").textContent = `Se requiere ${ASIS_MIN}% de asistencia para aprobar. Los retardos cuentan como asistencia; cada 3 retardos se convierten en 1 falta.`;
+  const m = califActual ? (asisActual || {}) : null;
+  const t = m ? asisCalc(m) : null;
+  const p = $("asisPct");
+  if (!califActual) { p.textContent = "—"; p.className = "asis-pct"; $("asisCounts").innerHTML = "<span>Escribe tu NUA para ver tu asistencia.</span>"; $("asisStrip").innerHTML = ""; return; }
+  p.textContent = t ? t.pct.toFixed(1) + "%" : "—";
+  p.className = "asis-pct" + (t && t.pct < ASIS_MIN ? " bajo" : "");
+  if (t) {
+    const resto = 3 - (t.r % 3);
+    $("asisCounts").innerHTML = `<span>✓ ${t.a} ${t.a === 1 ? "asistencia" : "asistencias"}</span><span>! ${t.r} ${t.r === 1 ? "retardo" : "retardos"}</span><span>✗ ${t.f} ${t.f === 1 ? "falta" : "faltas"}</span><span>Faltas totales: ${t.faltas}</span>` +
+      (t.r % 3 ? `<span>${resto === 1 ? "1 retardo más" : resto + " retardos más"} = 1 falta</span>` : "") +
+      (t.pct < ASIS_MIN ? `<span class="alerta">Debajo del ${ASIS_MIN}% requerido</span>` : "");
+  } else $("asisCounts").innerHTML = "<span>Todavía no hay asistencia registrada.</span>";
+  const sym = { A: "✓", R: "!", F: "✗" }, nom = { A: "asistencia", R: "retardo", F: "falta" };
+  $("asisStrip").innerHTML = ses.map(s => { const v = m[s.id] || ""; const [y, mo, d] = s.fecha.split("-");
+    return `<div class="asis-d" title="${d}/${mo}/${y}: ${nom[v] || "sin registro"}"><i class="${v}">${sym[v] || ""}</i><small>${d}/${mo}</small></div>`; }).join("");
+}
+
+function initSim() {
+  const g = califActual || ejemplo();
+  fijas = {}; pend = {};
+  CONFIG.rubros.forEach(r => {
+    const cols = HOJA.columnas.filter(c => c.rubro === r.id);
+    fijas[r.id] = []; pend[r.id] = [];
+    cols.forEach(c => {
+      if (typeof g[c.id] === "number") fijas[r.id].push({ nombre: c.nombre, v: g[c.id] });
+      else pend[r.id].push({ nombre: c.nombre, v: CONFIG.valorInicialSimulado });
+    });
+    const previstas = HOJA.previstas[r.id] || 0;
+    for (let k = cols.length + 1; k <= previstas; k++) {
+      pend[r.id].push({ nombre: r.id === "proyecto" ? "Proyecto final" : r.prefijo + " " + k, v: CONFIG.valorInicialSimulado });
+    }
+  });
+}
+
+function renderControls() {
+  const box = $("controls");
+  box.innerHTML = "";
+  CONFIG.rubros.forEach(r => {
+    const fs = document.createElement("fieldset");
+    fs.innerHTML = `<legend>${r.nombre} · ${r.extra ? "+" : ""}${Math.round(r.peso * 100)}%${r.extra ? " adicional" : ""}</legend>`;
+    fijas[r.id].forEach(it => {
+      const row = document.createElement("div");
+      row.className = "row fixed";
+      row.innerHTML = `<span>${esc(it.nombre)}</span><span class="lock">🔒 Registrada</span><span class="fixedval">${fmt(it.v)}</span>`;
+      fs.appendChild(row);
+    });
+    pend[r.id].forEach((it, j) => {
+      const nombre = esc(it.nombre), sid = r.id + "-" + j;
+      const row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML = `<label for="r-${sid}">${nombre}</label>
+        <input type="range" id="r-${sid}" min="0" max="10" step="0.1" value="${it.v}" aria-label="${nombre}">
+        <input type="number" id="n-${sid}" min="0" max="10" step="0.1" value="${fmt(it.v)}" aria-label="${nombre} (número)">`;
+      const range = row.querySelector('input[type="range"]'), num = row.querySelector('input[type="number"]');
+      range.addEventListener("input", () => { it.v = +range.value; num.value = fmt(it.v); update(); });
+      num.addEventListener("input", () => {
+        if (num.value === "" || isNaN(+num.value)) return;
+        it.v = clamp(+num.value); range.value = it.v; update();
+      });
+      num.addEventListener("blur", () => { num.value = fmt(it.v); });
+      fs.appendChild(row);
+    });
+    if (r.editable) {
+      const act = document.createElement("div");
+      act.className = "adds";
+      act.innerHTML = `<button type="button" class="mini" data-a="add">+ Agregar ${r.prefijo.toLowerCase()}</button>` +
+        (pend[r.id].length ? `<button type="button" class="mini" data-a="del">− Quitar la última</button>` : "");
+      act.querySelector('[data-a="add"]').addEventListener("click", () => {
+        if (pend[r.id].length < 12) {
+          const n = fijas[r.id].length + pend[r.id].length + 1;
+          pend[r.id].push({ nombre: r.prefijo + " " + n, v: CONFIG.valorInicialSimulado });
+          renderControls(); update();
+        }
+      });
+      const del = act.querySelector('[data-a="del"]');
+      if (del) del.addEventListener("click", () => { pend[r.id].pop(); renderControls(); update(); });
+      fs.appendChild(act);
+    }
+    box.appendChild(fs);
+  });
+}
+
+function compute() {
+  let base = 0, fijoPts = 0, pesoLibre = 0;
+  const filas = CONFIG.rubros.map(r => {
+    const f = fijas[r.id].map(x => x.v), p = pend[r.id].map(x => x.v);
+    const n = f.length + p.length;
+    if (n === 0) return { r, prom: 0, aporte: 0, n };
+    const sf = f.reduce((a, b) => a + b, 0), sp = p.reduce((a, b) => a + b, 0);
+    const prom = (sf + sp) / n, w = r.peso / n;
+    fijoPts += sf * w; pesoLibre += p.length * w; base += prom * r.peso;
+    return { r, prom, aporte: prom * r.peso, n };
+  });
+  return { total: Math.min(CONFIG.tope, base), sinTope: base, filas, fijoPts, pesoLibre };
+}
+
+function update() {
+  const { total, sinTope, filas, fijoPts, pesoLibre } = compute();
+  const meta = clamp(parseFloat($("goalInput").value) || 0);
+  $("final").textContent = fmt(total);
+  $("marker").style.left = (total * 10) + "%";
+  $("goalmark").style.left = (meta * 10) + "%";
+  $("goalmark").textContent = "meta " + fmt(meta);
+
+  // Semáforo contra la mínima aprobatoria (7)
+  const maximo = Math.min(CONFIG.tope, fijoPts + 10 * pesoLibre);
+  let color, titulo, desc;
+  if (total >= CONFIG.minimo) { color = "verde"; titulo = "Aprobado"; desc = `Con esta simulación pasas con ${fmt(CONFIG.minimo)} o más.`; }
+  else if (maximo >= CONFIG.minimo) { color = "amarillo"; titulo = "En peligro"; desc = `Con esta simulación no llegas a ${fmt(CONFIG.minimo)}, pero todavía puedes alcanzarlo.`; }
+  else { color = "rojo"; titulo = `Ya no alcanza el ${fmt(CONFIG.minimo, 0)}`; desc = `Aun con 10 en todo lo que falta, lo máximo posible es ${fmt(maximo)}.`; }
+  const ta = califActual ? asisCalc(asisActual || {}) : null;
+  if (ta && ta.pct < ASIS_MIN) { color = "rojo"; titulo = "Examen final por asistencias"; desc = `Tu asistencia es de ${ta.pct.toFixed(1)}%. Con menos de ${ASIS_MIN}% presentas examen final, sin importar tu calificación.`; }
+  $("finalBox").className = "final-box " + color;
+  $("status").textContent = titulo;
+  $("statusDesc").textContent = desc;
+  $("luzR").classList.toggle("on", color === "rojo");
+  $("luzA").classList.toggle("on", color === "amarillo");
+  $("luzV").classList.toggle("on", color === "verde");
+
+  let txt;
+  if (pesoLibre <= 0) txt = "Ya no quedan calificaciones por simular.";
+  else {
+    const nec = (meta - fijoPts) / pesoLibre;
+    if (nec <= 0) txt = `Con lo que ya tienes registrado tienes asegurado ${fmt(meta)}, aunque saques 0 en lo que falta.`;
+    else if (nec > 10) txt = `Para llegar a ${fmt(meta)} necesitarías más de 10 en todo lo que falta. Lo máximo que puedes alcanzar con 10 en todo es <strong>${fmt(fijoPts + 10 * pesoLibre)}</strong>.`;
+    else txt = `Para llegar a <strong>${fmt(meta)}</strong> necesitas sacar en promedio <strong>${fmt(nec)}</strong> en todo lo que falta.`;
+  }
+  $("need").innerHTML = txt;
+
+  $("breakdown").innerHTML = filas.map(f => `
+    <tr><td>${f.r.nombre} <span class="cnt">(${f.n})</span><div class="bar"><span style="width:${f.prom * 10}%"></span></div></td>
+    <td class="num">${fmt(f.prom)}</td><td class="num">${f.r.extra ? "+" : ""}${Math.round(f.r.peso * 100)}%</td><td class="num">${fmt(f.aporte, 2)}</td></tr>`).join("");
+  $("totalCell").textContent = fmt(total, 2);
+  $("topeNote").textContent = sinTope > CONFIG.tope ? `Con los puntos extra sumarías ${fmt(sinTope, 2)}, pero la calificación final tiene tope de ${CONFIG.tope}.` : "";
+}
+
+function cargar(nua) {
+  const clave = nua.trim().replace(/\s+/g, "");
+  if (!clave) return;
+  if (!(clave in NOMBRES)) {
+    $("msg").className = "msg error";
+    $("msg").textContent = `No encontramos el NUA ${clave}. Revisa que esté bien escrito o pregúntale a tu profesor.`;
+    return;
+  }
+  califActual = CALIF[clave] || {};
+  asisActual = ASIS[clave] || null;
+  $("msg").className = "msg";
+  $("msg").textContent = "Calificaciones cargadas. Mueve las barras para simular lo que falta.";
+  $("who").innerHTML = `<span class="nombre">${esc(NOMBRES[clave])}</span>NUA ${clave}`;
+  try { localStorage.setItem("nua", clave); } catch (e) {}
+  initSim(); renderControls(); update(); renderAsis();
+}
+
+$("loginForm").addEventListener("submit", e => { e.preventDefault(); cargar($("nua").value); });
+$("resetBtn").addEventListener("click", () => { initSim(); renderControls(); update(); });
+$("goalInput").addEventListener("input", update);
+
+initSim(); renderControls(); update(); renderAsis();
+try { const n = localStorage.getItem("nua"); if (n) { $("nua").value = n; cargar(n); } } catch (e) {}
+</script>
+</body>
+</html>
